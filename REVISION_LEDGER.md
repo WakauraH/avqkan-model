@@ -40,3 +40,19 @@ reproduction-based). What survived, what changed, what was retracted.
 `analyze2.py` (confirmatory analysis), `results_b1..b4/`, `results_c*/`,
 `gen_paper_figs.py`. Manuscript: `arXiv-2506.22801v1 2/mainwakaura2_v2.tex`
 (pre-panel version preserved as `mainwakaura2_v2_prepanel.bak.tex`).
+
+## Pre-registered confirmation (2026-08-19, after ledger above)
+
+PREREGISTRATION.md committed at 8a5d0b1 BEFORE launching `results_confirm*/`
+(fresh seeds 10-29, n=20, Holm m=3, frozen analyze_confirm.py). All three
+hypotheses PASS with validity gates OK:
+
+| d | quantum (NG) | oracle classical | Holm p |
+|---|---|---|---|
+| 12 | 12.14 ± 2.07 | 14.42 ± 2.21 | 0.0037 |
+| 14 | 11.50 ± 2.96 | 14.92 ± 1.88 | 0.0003 |
+| 16 | 11.58 ± 3.13 | 14.64 ± 1.79 | 0.0002 |
+
+Secondary: COBYLA also beats oracle classical (p ≤ 1e-4 all sizes); NG vs
+COBYLA indistinguishable (p ≥ 0.25) → model effect, not optimizer effect.
+Manuscript updated (abstract, §3.4 Table 3, discussion, conclusion).

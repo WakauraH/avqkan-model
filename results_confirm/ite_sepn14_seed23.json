@@ -1,0 +1,35 @@
+{
+  "method": "ite",
+  "target": "sepn14",
+  "seed": 23,
+  "steps": 40,
+  "delta": 0.1,
+  "shots": 0,
+  "nq": 14,
+  "ite_reg": 0.001,
+  "eta_m": 0.3,
+  "grow_every": 10,
+  "kick": 0.0,
+  "maxiter": 1000,
+  "config": {
+    "nq": 14,
+    "dim": 14,
+    "grids": 8,
+    "ng": 8,
+    "ndT": 3,
+    "n_train": 10,
+    "n_test": 50,
+    "readout": [
+      0,
+      1
+    ],
+    "readout_mode": "all_pairs",
+    "spline_eval": "direct",
+    "encoding": "code",
+    "ng_growth": false,
+    "weighting": true,
+    "shots": 0,
+    "seed": 23
+  },
+  "elapsed_sec": 651.19
+}
