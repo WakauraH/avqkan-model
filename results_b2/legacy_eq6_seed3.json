@@ -1,0 +1,35 @@
+{
+  "method": "legacy",
+  "target": "eq6",
+  "seed": 3,
+  "steps": 60,
+  "delta": 0.1,
+  "shots": 0,
+  "nq": 4,
+  "ite_reg": 0.001,
+  "eta_m": 0.3,
+  "grow_every": 20,
+  "kick": 0.0,
+  "maxiter": 200,
+  "config": {
+    "nq": 4,
+    "dim": 4,
+    "grids": 8,
+    "ng": 8,
+    "ndT": 3,
+    "n_train": 10,
+    "n_test": 50,
+    "readout": [
+      0,
+      1
+    ],
+    "readout_mode": "single",
+    "spline_eval": "direct",
+    "encoding": "code",
+    "ng_growth": false,
+    "weighting": true,
+    "shots": 0,
+    "seed": 3
+  },
+  "elapsed_sec": 53.04
+}

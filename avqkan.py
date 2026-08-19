@@ -90,6 +90,23 @@ def make_sepsin(d):
     return f, d
 
 
+# 標準化 sep 族の定数（一様乱数 2e5 点のモンテカルロ、シード 20260819 で確定）
+_SEPN_STATS = {4: (1.123063, 0.415513), 6: (1.684815, 0.509674),
+               8: (2.244644, 0.587657), 10: (2.806651, 0.657629),
+               12: (3.367388, 0.719816), 14: (3.928791, 0.777606)}
+
+
+def make_sepsin_norm(d, k=2.5):
+    """sep_d の標準化版: f = clip((Σ sin − μ_d)/(k σ_d), −1, 1)。
+    μ_d, σ_d は上の定数。目標分布の位置・スケールが d に依らないため、
+    定数予測器の誤差が d にほぼ非依存になり、サイズ間比較が意味を持つ。"""
+    mu, sd = _SEPN_STATS[d]
+    def f(x):
+        z = sum(np.sin(x[2 * i] ** 2 + x[2 * i + 1] ** 2) for i in range(d // 2))
+        return float(np.clip((z - mu) / (k * sd), -1.0, 1.0))
+    return f, d
+
+
 TARGETS = {
     "eq6":    (_t_eq6, 4),
     "sep4":   make_sepsin(4),
@@ -98,6 +115,12 @@ TARGETS = {
     "sep10":  make_sepsin(10),
     "sep12":  make_sepsin(12),
     "sep14":  make_sepsin(14),
+    "sepn4":  make_sepsin_norm(4),
+    "sepn6":  make_sepsin_norm(6),
+    "sepn8":  make_sepsin_norm(8),
+    "sepn10": make_sepsin_norm(10),
+    "sepn12": make_sepsin_norm(12),
+    "sepn14": make_sepsin_norm(14),
     "log":    (_t_log, 2),
     "frac":   (_t_frac, 2),
     "radius": (_t_radius, 3),
@@ -161,6 +184,8 @@ class Config:
     readout: tuple = (0, 1)      # "single" のときの読み出し Z_a Z_b
     readout_mode: str = "single"  # "single" | "all_pairs"（(2/nq)ΣZ_{2j}Z_{2j+1}）
     spline_eval: str = "direct"  # "direct"（修正）| "grid"（原実装の最近傍量子化）
+    encoding: str = "code"       # "code"（実装どおり arccos(x), dim量子ビット）|
+                                 # "paper"（本文式 arccos(2x-1)+π/2, 全量子ビット）
     ng_growth: bool = False      # True で原実装の ng = grids+4 変更を再現
     weighting: bool = True       # 原実装の重み (B - fn)/B
     shots: int = 0               # 0 = 無限ショット（状態ベクトル厳密）
@@ -173,8 +198,13 @@ class Config:
 
 def prep_circuit(x, cfg: Config) -> Circuit:
     c = Circuit(cfg.nq)
-    for j in range(cfg.dim):
-        c.ry(np.arccos(np.clip(x[j], -1.0, 1.0)) + 0.5 * np.pi)[j]
+    if cfg.encoding == "paper":
+        for j in range(cfg.nq):
+            xv = x[j % len(x)]
+            c.ry(np.arccos(np.clip(2 * xv - 1, -1.0, 1.0)) + 0.5 * np.pi)[j]
+    else:
+        for j in range(cfg.dim):
+            c.ry(np.arccos(np.clip(x[j], -1.0, 1.0)) + 0.5 * np.pi)[j]
     return c
 
 
@@ -253,7 +283,10 @@ class Problem:
         self.fn, nvar = TARGETS[target_name]
         cfg.dim = nvar
         self.target_name = target_name
-        if cfg.readout_mode == "all_pairs":
+        if cfg.readout_mode == "single_scaled":
+            # 単項のまま出力レンジだけ半分にする（読み出し依存性の機構切り分け用）
+            self.Hsign = 0.5 * diag_signs(list(cfg.readout), cfg.nq)
+        elif cfg.readout_mode == "all_pairs":
             npair = cfg.nq // 2
             self.Hsign = sum(diag_signs([2 * j, 2 * j + 1], cfg.nq)
                              for j in range(npair)) / npair
@@ -473,6 +506,36 @@ def ite_step_spsa(vlist, cluster, prob: Problem, delta, rng, state,
     return v - delta * step, float(np.linalg.norm(g))
 
 
+def ite_step_ctl(vlist, cluster, prob: Problem, delta, reg=1e-3, eta_g=0.05,
+                 eta=1e-4, ng=None):
+    """交絡切り分け用の対照: 計量は厳密ヤコビアン（FD推定と同じ量の厳密値）、
+    正則化は FD 経路と同じ固有値クリップ、勾配は FD 経路と同じ η_g=0.05 の
+    ⟨H⟩ 中心差分（厳密期待値）。計量『推定量』だけを FD → 厳密に戻した条件。"""
+    P = len(vlist)
+    v = np.array(vlist, dtype=float)
+    A = np.zeros((P, P))
+    g = np.zeros(P)
+    with np.errstate(all="ignore"):
+        for m, x in enumerate(prob.X):
+            psi, J = jacobian_and_state(v, x, cluster, prob, eta, ng)
+            h = expval_diag(psi, prob.Hsign)
+            dh = np.zeros(P)
+            for i in range(P):
+                vp = v.copy(); vp[i] += eta_g
+                vm = v.copy(); vm[i] -= eta_g
+                hp = expval_diag(kan_forward(vp, x, cluster, prob.cfg, ng), prob.Hsign)
+                hm = expval_diag(kan_forward(vm, x, cluster, prob.cfg, ng), prob.Hsign)
+                dh[i] = (hp - hm) / (2 * eta_g)
+            g += prob.w[m] * 2 * (h - prob.f[m]) * dh
+            ov = J.conj().T @ psi
+            A += prob.w[m] * (np.real(J.conj().T @ J) - np.real(np.outer(ov, ov.conj())))
+    As = (A + A.T) / 2
+    w_, V = np.linalg.eigh(As)
+    As = V @ np.diag(np.clip(w_, reg, None)) @ V.T
+    step = np.linalg.solve(As, g)
+    return v - delta * step, float(np.linalg.norm(g))
+
+
 def ite_step(vlist, cluster, prob: Problem, delta, reg=1e-6, eta=1e-4,
              use_metric=True, ng=None):
     """自然勾配（虚時間）1 ステップ。更新後のパラメータと診断量を返す。"""
@@ -555,10 +618,10 @@ def run(method, target, seed, steps, delta, grow_every, out_dir,
         spline_eval="direct", ng_growth=False, kick=0.0, maxiter=1000,
         grids=8, ndT=3, verbose=True, shots=0, nq=4, tag_suffix="",
         readout_mode="single", ite_reg=1e-3, eta_m=0.3, spsa_resamplings=1,
-        force_fd_metric=False):
+        force_fd_metric=False, encoding="code"):
     cfg = Config(nq=nq, seed=seed, grids=grids, ng=grids, ndT=ndT,
                  spline_eval=spline_eval, ng_growth=ng_growth, shots=shots,
-                 readout_mode=readout_mode)
+                 readout_mode=readout_mode, encoding=encoding)
     prob = Problem(cfg, target)
     rng = np.random.default_rng(seed + 12345)
     # 測定用の乱数は最適化用と分離する（ショット雑音の再現性のため）
@@ -591,6 +654,9 @@ def run(method, target, seed, steps, delta, grow_every, out_dir,
                        method="COBYLA", options={"disp": False, "maxiter": maxiter})
             vlist = np.array(res.x)
             gnorm = float("nan")
+        elif method == "ite_ctl":
+            vlist, gnorm = ite_step_ctl(vlist, cluster, prob, delta,
+                                        reg=ite_reg, ng=ng)
         elif method == "ite_spsa":
             if spsa_state is None or spsa_state["gbar"].shape[0] != len(vlist):
                 # アンザッツ成長でパラメータ数が変わったら反復平均を作り直す
@@ -651,7 +717,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--method",
-                    choices=["legacy", "ite", "gd", "cobyla", "ite_spsa"],
+                    choices=["legacy", "ite", "gd", "cobyla", "ite_spsa", "ite_ctl"],
                     default="ite")
     ap.add_argument("--target", choices=sorted(TARGETS), default="log")
     ap.add_argument("--seed", type=int, default=0)
@@ -668,13 +734,15 @@ def main():
     ap.add_argument("--ng-growth", action="store_true")
     ap.add_argument("--shots", type=int, default=0, help="0 で無限ショット")
     ap.add_argument("--nq", type=int, default=4)
-    ap.add_argument("--readout-mode", choices=["single", "all_pairs"],
+    ap.add_argument("--readout-mode",
+                    choices=["single", "all_pairs", "single_scaled"],
                     default="single")
+    ap.add_argument("--encoding", choices=["code", "paper"], default="code")
     ap.add_argument("--out", default="results")
     a = ap.parse_args()
     run(a.method, a.target, a.seed, a.steps, a.delta, a.grow_every, a.out,
         a.spline_eval, a.ng_growth, a.kick, a.maxiter, a.grids, a.ndT,
-        shots=a.shots, nq=a.nq, readout_mode=a.readout_mode)
+        shots=a.shots, nq=a.nq, readout_mode=a.readout_mode, encoding=a.encoding)
 
 
 if __name__ == "__main__":

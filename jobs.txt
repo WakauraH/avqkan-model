@@ -1,0 +1,180 @@
+python3 avqkan.py --method ite_ctl --target sep4 --seed 0 --steps 40 --grow-every 10 --readout-mode single --out results_b1
+python3 avqkan.py --method ite_ctl --target sep4 --seed 1 --steps 40 --grow-every 10 --readout-mode single --out results_b1
+python3 avqkan.py --method ite_ctl --target sep4 --seed 2 --steps 40 --grow-every 10 --readout-mode single --out results_b1
+python3 avqkan.py --method ite_ctl --target sep4 --seed 3 --steps 40 --grow-every 10 --readout-mode single --out results_b1
+python3 avqkan.py --method ite_ctl --target sep4 --seed 4 --steps 40 --grow-every 10 --readout-mode single --out results_b1
+python3 avqkan.py --method ite_ctl --target sep4 --seed 5 --steps 40 --grow-every 10 --readout-mode single --out results_b1
+python3 avqkan.py --method ite_ctl --target sep4 --seed 6 --steps 40 --grow-every 10 --readout-mode single --out results_b1
+python3 avqkan.py --method ite_ctl --target sep4 --seed 7 --steps 40 --grow-every 10 --readout-mode single --out results_b1
+python3 avqkan.py --method ite_ctl --target sep4 --seed 8 --steps 40 --grow-every 10 --readout-mode single --out results_b1
+python3 avqkan.py --method ite_ctl --target sep4 --seed 9 --steps 40 --grow-every 10 --readout-mode single --out results_b1
+python3 avqkan.py --method legacy --target eq6 --seed 0 --steps 60 --grow-every 20 --kick 0.0 --spline-eval direct --maxiter 200 --out results_b2
+python3 avqkan.py --method legacy --target eq6 --seed 1 --steps 60 --grow-every 20 --kick 0.0 --spline-eval direct --maxiter 200 --out results_b2
+python3 avqkan.py --method legacy --target eq6 --seed 2 --steps 60 --grow-every 20 --kick 0.0 --spline-eval direct --maxiter 200 --out results_b2
+python3 avqkan.py --method legacy --target eq6 --seed 3 --steps 60 --grow-every 20 --kick 0.0 --spline-eval direct --maxiter 200 --out results_b2
+python3 avqkan.py --method legacy --target eq6 --seed 4 --steps 60 --grow-every 20 --kick 0.0 --spline-eval direct --maxiter 200 --out results_b2
+python3 avqkan.py --method legacy --target eq6 --seed 5 --steps 60 --grow-every 20 --kick 0.0 --spline-eval direct --maxiter 200 --out results_b2
+python3 avqkan.py --method legacy --target eq6 --seed 6 --steps 60 --grow-every 20 --kick 0.0 --spline-eval direct --maxiter 200 --out results_b2
+python3 avqkan.py --method legacy --target eq6 --seed 7 --steps 60 --grow-every 20 --kick 0.0 --spline-eval direct --maxiter 200 --out results_b2
+python3 avqkan.py --method legacy --target eq6 --seed 8 --steps 60 --grow-every 20 --kick 0.0 --spline-eval direct --maxiter 200 --out results_b2
+python3 avqkan.py --method legacy --target eq6 --seed 9 --steps 60 --grow-every 20 --kick 0.0 --spline-eval direct --maxiter 200 --out results_b2
+python3 avqkan.py --method legacy --target log --seed 0 --steps 60 --grow-every 20 --kick 0.0 --spline-eval direct --maxiter 200 --out results_b2
+python3 avqkan.py --method legacy --target log --seed 1 --steps 60 --grow-every 20 --kick 0.0 --spline-eval direct --maxiter 200 --out results_b2
+python3 avqkan.py --method legacy --target log --seed 2 --steps 60 --grow-every 20 --kick 0.0 --spline-eval direct --maxiter 200 --out results_b2
+python3 avqkan.py --method legacy --target log --seed 3 --steps 60 --grow-every 20 --kick 0.0 --spline-eval direct --maxiter 200 --out results_b2
+python3 avqkan.py --method legacy --target log --seed 4 --steps 60 --grow-every 20 --kick 0.0 --spline-eval direct --maxiter 200 --out results_b2
+python3 avqkan.py --method legacy --target log --seed 5 --steps 60 --grow-every 20 --kick 0.0 --spline-eval direct --maxiter 200 --out results_b2
+python3 avqkan.py --method legacy --target log --seed 6 --steps 60 --grow-every 20 --kick 0.0 --spline-eval direct --maxiter 200 --out results_b2
+python3 avqkan.py --method legacy --target log --seed 7 --steps 60 --grow-every 20 --kick 0.0 --spline-eval direct --maxiter 200 --out results_b2
+python3 avqkan.py --method legacy --target log --seed 8 --steps 60 --grow-every 20 --kick 0.0 --spline-eval direct --maxiter 200 --out results_b2
+python3 avqkan.py --method legacy --target log --seed 9 --steps 60 --grow-every 20 --kick 0.0 --spline-eval direct --maxiter 200 --out results_b2
+python3 avqkan.py --method ite --target sep4 --seed 0 --steps 40 --grow-every 10 --readout-mode single_scaled --out results_b3
+python3 avqkan.py --method cobyla --maxiter 30 --target sep4 --seed 0 --steps 40 --grow-every 10 --readout-mode single_scaled --out results_b3_m30
+python3 avqkan.py --method cobyla --maxiter 200 --target sep4 --seed 0 --steps 40 --grow-every 10 --readout-mode single_scaled --out results_b3_m200
+python3 avqkan.py --method ite --target sep4 --seed 1 --steps 40 --grow-every 10 --readout-mode single_scaled --out results_b3
+python3 avqkan.py --method cobyla --maxiter 30 --target sep4 --seed 1 --steps 40 --grow-every 10 --readout-mode single_scaled --out results_b3_m30
+python3 avqkan.py --method cobyla --maxiter 200 --target sep4 --seed 1 --steps 40 --grow-every 10 --readout-mode single_scaled --out results_b3_m200
+python3 avqkan.py --method ite --target sep4 --seed 2 --steps 40 --grow-every 10 --readout-mode single_scaled --out results_b3
+python3 avqkan.py --method cobyla --maxiter 30 --target sep4 --seed 2 --steps 40 --grow-every 10 --readout-mode single_scaled --out results_b3_m30
+python3 avqkan.py --method cobyla --maxiter 200 --target sep4 --seed 2 --steps 40 --grow-every 10 --readout-mode single_scaled --out results_b3_m200
+python3 avqkan.py --method ite --target sep4 --seed 3 --steps 40 --grow-every 10 --readout-mode single_scaled --out results_b3
+python3 avqkan.py --method cobyla --maxiter 30 --target sep4 --seed 3 --steps 40 --grow-every 10 --readout-mode single_scaled --out results_b3_m30
+python3 avqkan.py --method cobyla --maxiter 200 --target sep4 --seed 3 --steps 40 --grow-every 10 --readout-mode single_scaled --out results_b3_m200
+python3 avqkan.py --method ite --target sep4 --seed 4 --steps 40 --grow-every 10 --readout-mode single_scaled --out results_b3
+python3 avqkan.py --method cobyla --maxiter 30 --target sep4 --seed 4 --steps 40 --grow-every 10 --readout-mode single_scaled --out results_b3_m30
+python3 avqkan.py --method cobyla --maxiter 200 --target sep4 --seed 4 --steps 40 --grow-every 10 --readout-mode single_scaled --out results_b3_m200
+python3 avqkan.py --method ite --target sep4 --seed 5 --steps 40 --grow-every 10 --readout-mode single_scaled --out results_b3
+python3 avqkan.py --method cobyla --maxiter 30 --target sep4 --seed 5 --steps 40 --grow-every 10 --readout-mode single_scaled --out results_b3_m30
+python3 avqkan.py --method cobyla --maxiter 200 --target sep4 --seed 5 --steps 40 --grow-every 10 --readout-mode single_scaled --out results_b3_m200
+python3 avqkan.py --method ite --target sep4 --seed 6 --steps 40 --grow-every 10 --readout-mode single_scaled --out results_b3
+python3 avqkan.py --method cobyla --maxiter 30 --target sep4 --seed 6 --steps 40 --grow-every 10 --readout-mode single_scaled --out results_b3_m30
+python3 avqkan.py --method cobyla --maxiter 200 --target sep4 --seed 6 --steps 40 --grow-every 10 --readout-mode single_scaled --out results_b3_m200
+python3 avqkan.py --method ite --target sep4 --seed 7 --steps 40 --grow-every 10 --readout-mode single_scaled --out results_b3
+python3 avqkan.py --method cobyla --maxiter 30 --target sep4 --seed 7 --steps 40 --grow-every 10 --readout-mode single_scaled --out results_b3_m30
+python3 avqkan.py --method cobyla --maxiter 200 --target sep4 --seed 7 --steps 40 --grow-every 10 --readout-mode single_scaled --out results_b3_m200
+python3 avqkan.py --method ite --target sep4 --seed 8 --steps 40 --grow-every 10 --readout-mode single_scaled --out results_b3
+python3 avqkan.py --method cobyla --maxiter 30 --target sep4 --seed 8 --steps 40 --grow-every 10 --readout-mode single_scaled --out results_b3_m30
+python3 avqkan.py --method cobyla --maxiter 200 --target sep4 --seed 8 --steps 40 --grow-every 10 --readout-mode single_scaled --out results_b3_m200
+python3 avqkan.py --method ite --target sep4 --seed 9 --steps 40 --grow-every 10 --readout-mode single_scaled --out results_b3
+python3 avqkan.py --method cobyla --maxiter 30 --target sep4 --seed 9 --steps 40 --grow-every 10 --readout-mode single_scaled --out results_b3_m30
+python3 avqkan.py --method cobyla --maxiter 200 --target sep4 --seed 9 --steps 40 --grow-every 10 --readout-mode single_scaled --out results_b3_m200
+python3 avqkan.py --method ite --target sep4 --seed 0 --steps 40 --grow-every 10 --readout-mode single --encoding paper --out results_b4
+python3 avqkan.py --method cobyla --maxiter 30 --target sep4 --seed 0 --steps 40 --grow-every 10 --readout-mode single --encoding paper --out results_b4_m30
+python3 avqkan.py --method ite --target sep4 --seed 1 --steps 40 --grow-every 10 --readout-mode single --encoding paper --out results_b4
+python3 avqkan.py --method cobyla --maxiter 30 --target sep4 --seed 1 --steps 40 --grow-every 10 --readout-mode single --encoding paper --out results_b4_m30
+python3 avqkan.py --method ite --target sep4 --seed 2 --steps 40 --grow-every 10 --readout-mode single --encoding paper --out results_b4
+python3 avqkan.py --method cobyla --maxiter 30 --target sep4 --seed 2 --steps 40 --grow-every 10 --readout-mode single --encoding paper --out results_b4_m30
+python3 avqkan.py --method ite --target sep4 --seed 3 --steps 40 --grow-every 10 --readout-mode single --encoding paper --out results_b4
+python3 avqkan.py --method cobyla --maxiter 30 --target sep4 --seed 3 --steps 40 --grow-every 10 --readout-mode single --encoding paper --out results_b4_m30
+python3 avqkan.py --method ite --target sep4 --seed 4 --steps 40 --grow-every 10 --readout-mode single --encoding paper --out results_b4
+python3 avqkan.py --method cobyla --maxiter 30 --target sep4 --seed 4 --steps 40 --grow-every 10 --readout-mode single --encoding paper --out results_b4_m30
+python3 avqkan.py --method ite --target sep4 --seed 5 --steps 40 --grow-every 10 --readout-mode single --encoding paper --out results_b4
+python3 avqkan.py --method cobyla --maxiter 30 --target sep4 --seed 5 --steps 40 --grow-every 10 --readout-mode single --encoding paper --out results_b4_m30
+python3 avqkan.py --method ite --target sep4 --seed 6 --steps 40 --grow-every 10 --readout-mode single --encoding paper --out results_b4
+python3 avqkan.py --method cobyla --maxiter 30 --target sep4 --seed 6 --steps 40 --grow-every 10 --readout-mode single --encoding paper --out results_b4_m30
+python3 avqkan.py --method ite --target sep4 --seed 7 --steps 40 --grow-every 10 --readout-mode single --encoding paper --out results_b4
+python3 avqkan.py --method cobyla --maxiter 30 --target sep4 --seed 7 --steps 40 --grow-every 10 --readout-mode single --encoding paper --out results_b4_m30
+python3 avqkan.py --method ite --target sep4 --seed 8 --steps 40 --grow-every 10 --readout-mode single --encoding paper --out results_b4
+python3 avqkan.py --method cobyla --maxiter 30 --target sep4 --seed 8 --steps 40 --grow-every 10 --readout-mode single --encoding paper --out results_b4_m30
+python3 avqkan.py --method ite --target sep4 --seed 9 --steps 40 --grow-every 10 --readout-mode single --encoding paper --out results_b4
+python3 avqkan.py --method cobyla --maxiter 30 --target sep4 --seed 9 --steps 40 --grow-every 10 --readout-mode single --encoding paper --out results_b4_m30
+python3 avqkan.py --method ite --target sepn4 --nq 4 --seed 0 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn4 --nq 4 --seed 0 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn4 --nq 4 --seed 1 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn4 --nq 4 --seed 1 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn4 --nq 4 --seed 2 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn4 --nq 4 --seed 2 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn4 --nq 4 --seed 3 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn4 --nq 4 --seed 3 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn4 --nq 4 --seed 4 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn4 --nq 4 --seed 4 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn4 --nq 4 --seed 5 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn4 --nq 4 --seed 5 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn4 --nq 4 --seed 6 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn4 --nq 4 --seed 6 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn4 --nq 4 --seed 7 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn4 --nq 4 --seed 7 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn4 --nq 4 --seed 8 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn4 --nq 4 --seed 8 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn4 --nq 4 --seed 9 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn4 --nq 4 --seed 9 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn6 --nq 6 --seed 0 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn6 --nq 6 --seed 0 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn6 --nq 6 --seed 1 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn6 --nq 6 --seed 1 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn6 --nq 6 --seed 2 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn6 --nq 6 --seed 2 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn6 --nq 6 --seed 3 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn6 --nq 6 --seed 3 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn6 --nq 6 --seed 4 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn6 --nq 6 --seed 4 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn6 --nq 6 --seed 5 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn6 --nq 6 --seed 5 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn6 --nq 6 --seed 6 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn6 --nq 6 --seed 6 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn6 --nq 6 --seed 7 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn6 --nq 6 --seed 7 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn6 --nq 6 --seed 8 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn6 --nq 6 --seed 8 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn6 --nq 6 --seed 9 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn6 --nq 6 --seed 9 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn8 --nq 8 --seed 0 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn8 --nq 8 --seed 0 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn8 --nq 8 --seed 1 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn8 --nq 8 --seed 1 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn8 --nq 8 --seed 2 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn8 --nq 8 --seed 2 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn8 --nq 8 --seed 3 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn8 --nq 8 --seed 3 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn8 --nq 8 --seed 4 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn8 --nq 8 --seed 4 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn8 --nq 8 --seed 5 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn8 --nq 8 --seed 5 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn8 --nq 8 --seed 6 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn8 --nq 8 --seed 6 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn8 --nq 8 --seed 7 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn8 --nq 8 --seed 7 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn8 --nq 8 --seed 8 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn8 --nq 8 --seed 8 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn8 --nq 8 --seed 9 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn8 --nq 8 --seed 9 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn10 --nq 10 --seed 0 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn10 --nq 10 --seed 0 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn10 --nq 10 --seed 1 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn10 --nq 10 --seed 1 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn10 --nq 10 --seed 2 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn10 --nq 10 --seed 2 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn10 --nq 10 --seed 3 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn10 --nq 10 --seed 3 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn10 --nq 10 --seed 4 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn10 --nq 10 --seed 4 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn10 --nq 10 --seed 5 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn10 --nq 10 --seed 5 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn10 --nq 10 --seed 6 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn10 --nq 10 --seed 6 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn10 --nq 10 --seed 7 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn10 --nq 10 --seed 7 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn10 --nq 10 --seed 8 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn10 --nq 10 --seed 8 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn10 --nq 10 --seed 9 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn10 --nq 10 --seed 9 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn12 --nq 12 --seed 0 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn12 --nq 12 --seed 0 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn12 --nq 12 --seed 1 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn12 --nq 12 --seed 1 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn12 --nq 12 --seed 2 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn12 --nq 12 --seed 2 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn12 --nq 12 --seed 3 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn12 --nq 12 --seed 3 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn12 --nq 12 --seed 4 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn12 --nq 12 --seed 4 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn12 --nq 12 --seed 5 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn12 --nq 12 --seed 5 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn12 --nq 12 --seed 6 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn12 --nq 12 --seed 6 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn12 --nq 12 --seed 7 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn12 --nq 12 --seed 7 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn12 --nq 12 --seed 8 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn12 --nq 12 --seed 8 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
+python3 avqkan.py --method ite --target sepn12 --nq 12 --seed 9 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c
+python3 avqkan.py --method cobyla --maxiter 30 --target sepn12 --nq 12 --seed 9 --steps 40 --grow-every 10 --readout-mode all_pairs --out results_c_m30
