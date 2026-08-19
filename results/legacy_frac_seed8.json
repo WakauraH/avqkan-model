@@ -1,0 +1,28 @@
+{
+  "method": "legacy",
+  "target": "frac",
+  "seed": 8,
+  "steps": 60,
+  "delta": 0.1,
+  "grow_every": 20,
+  "kick": 0.1,
+  "maxiter": 200,
+  "config": {
+    "nq": 4,
+    "dim": 2,
+    "grids": 8,
+    "ng": 8,
+    "ndT": 3,
+    "n_train": 10,
+    "n_test": 50,
+    "readout": [
+      0,
+      1
+    ],
+    "spline_eval": "grid",
+    "ng_growth": true,
+    "weighting": true,
+    "seed": 8
+  },
+  "elapsed_sec": 64.33
+}

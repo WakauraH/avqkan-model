@@ -1,0 +1,18 @@
+{
+  "cobyla": {
+    "final_mean": 5.68247988080339,
+    "final_std": 0.6802370417001847,
+    "best_mean": 5.676757546034144,
+    "best_std": 0.684674894011828,
+    "forward_calls": 82346,
+    "n_params": 32
+  },
+  "ite": {
+    "final_mean": 10.029467938472377,
+    "final_std": 3.599374514494966,
+    "best_mean": 10.029467938472377,
+    "best_std": 3.599374514494966,
+    "forward_calls": 24270,
+    "n_params": 30
+  }
+}

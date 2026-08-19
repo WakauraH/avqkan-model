@@ -1,0 +1,34 @@
+{
+  "method": "ite_spsa",
+  "target": "log",
+  "seed": 1,
+  "steps": 30,
+  "delta": 0.1,
+  "shots": 4096,
+  "nq": 4,
+  "ite_reg": 0.1,
+  "eta_m": 0.3,
+  "grow_every": 10,
+  "kick": 0.0,
+  "maxiter": 1000,
+  "config": {
+    "nq": 4,
+    "dim": 2,
+    "grids": 8,
+    "ng": 8,
+    "ndT": 3,
+    "n_train": 10,
+    "n_test": 50,
+    "readout": [
+      0,
+      1
+    ],
+    "readout_mode": "single",
+    "spline_eval": "direct",
+    "ng_growth": false,
+    "weighting": true,
+    "shots": 4096,
+    "seed": 1
+  },
+  "elapsed_sec": 9.01
+}

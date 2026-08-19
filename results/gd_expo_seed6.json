@@ -1,0 +1,28 @@
+{
+  "method": "gd",
+  "target": "expo",
+  "seed": 6,
+  "steps": 60,
+  "delta": 0.1,
+  "grow_every": 20,
+  "kick": 0.0,
+  "maxiter": 200,
+  "config": {
+    "nq": 4,
+    "dim": 3,
+    "grids": 8,
+    "ng": 8,
+    "ndT": 3,
+    "n_train": 10,
+    "n_test": 50,
+    "readout": [
+      0,
+      1
+    ],
+    "spline_eval": "direct",
+    "ng_growth": false,
+    "weighting": true,
+    "seed": 6
+  },
+  "elapsed_sec": 7.08
+}

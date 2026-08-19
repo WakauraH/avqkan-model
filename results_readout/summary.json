@@ -1,0 +1,44 @@
+{
+  "single|ite": {
+    "final_mean": 12.542426827004558,
+    "final_std": 6.217074722873473,
+    "best_mean": 7.590025097009705,
+    "best_std": 0.7230589701042744,
+    "opt_calls": 17550
+  },
+  "single|cobyla max30": {
+    "final_mean": 11.85829995527693,
+    "final_std": 3.3058048811175302,
+    "best_mean": 11.239103476240947,
+    "best_std": 3.3708212205099346,
+    "opt_calls": 13710
+  },
+  "single|cobyla max200": {
+    "final_mean": 10.42491937333602,
+    "final_std": 2.95829421965874,
+    "best_mean": 9.575251527392792,
+    "best_std": 3.0318325328005207,
+    "opt_calls": 75718
+  },
+  "all_pairs|ite": {
+    "final_mean": 11.879215067380734,
+    "final_std": 4.313835564827291,
+    "best_mean": 8.896117060975493,
+    "best_std": 2.4863188201073845,
+    "opt_calls": 17870
+  },
+  "all_pairs|cobyla max30": {
+    "final_mean": 8.92438271394924,
+    "final_std": 1.8394571330308127,
+    "best_mean": 8.775813019806463,
+    "best_std": 1.9187458727122784,
+    "opt_calls": 13790
+  },
+  "all_pairs|cobyla max200": {
+    "final_mean": 8.805734733524584,
+    "final_std": 3.4019194866923566,
+    "best_mean": 8.66526719319996,
+    "best_std": 3.3911259616148057,
+    "opt_calls": 77360
+  }
+}
