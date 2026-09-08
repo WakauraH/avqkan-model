@@ -1,6 +1,6 @@
 # Pre-registered confirmatory study (model paper, arXiv:2503.21336 revision)
 
-**Status: DRAFT — not yet committed. Commit this file BEFORE launching any run in `results_model_confirm*/`.**
+**Status: registered at commit 74a528d (2026-09-08) BEFORE any run in `results_model_confirm*/` was launched.**
 
 Exploratory motivation (already public in the v2 companion, arXiv:2506.22801, `REVISION_LEDGER.md`):
 on the standardized family sepn_d with seeds 10–29, COBYLA-trained Adaptive VQKAN beat the per-seed
