@@ -1,0 +1,32 @@
+{
+  "method": "qnn",
+  "target": "eq6",
+  "seed": 2,
+  "layers": 2,
+  "opt": "lbfgs",
+  "maxiter": 200,
+  "restarts": 5,
+  "nq": 4,
+  "n_params": 16,
+  "config": {
+    "nq": 4,
+    "dim": 4,
+    "grids": 8,
+    "ng": 8,
+    "ndT": 3,
+    "n_train": 10,
+    "n_test": 50,
+    "readout": [
+      0,
+      1
+    ],
+    "readout_mode": "single",
+    "spline_eval": "direct",
+    "encoding": "code",
+    "ng_growth": false,
+    "weighting": true,
+    "shots": 0,
+    "seed": 2
+  },
+  "elapsed_sec": 49.59
+}

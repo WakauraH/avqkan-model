@@ -1,0 +1,32 @@
+{
+  "method": "qnn",
+  "target": "sepn12",
+  "seed": 42,
+  "layers": 3,
+  "opt": "lbfgs",
+  "maxiter": 100,
+  "restarts": 2,
+  "nq": 12,
+  "n_params": 72,
+  "config": {
+    "nq": 12,
+    "dim": 12,
+    "grids": 8,
+    "ng": 8,
+    "ndT": 3,
+    "n_train": 10,
+    "n_test": 50,
+    "readout": [
+      0,
+      1
+    ],
+    "readout_mode": "all_pairs",
+    "spline_eval": "direct",
+    "encoding": "code",
+    "ng_growth": false,
+    "weighting": true,
+    "shots": 0,
+    "seed": 42
+  },
+  "elapsed_sec": 676.71
+}

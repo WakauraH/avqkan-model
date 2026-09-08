@@ -1,0 +1,28 @@
+============================================================================================
+事前登録済み確証解析（シード 30-49, n=20, Holm m=4）
+============================================================================================
+    H   d           AVQKAN oracle classical   const  gate  med diff        p   Holm p verdict
+  H12  12   11.136± 1.95   13.031± 2.48   17.27    OK    -2.439   0.0083   0.0166 PASS
+  H16  16   11.743± 3.13   15.013± 2.00   18.39    OK    -3.950   0.0010   0.0041 PASS
+  H18  18   16.282± 3.53   15.786± 1.92   18.02    OK    -0.014   1.0000   1.0000 not significant
+ H12s  12   10.802± 2.46   13.031± 2.48   17.27    OK    -3.009   0.0042   0.0127 PASS
+
+副次（探索的, BH q）
+  tuned QNN d=12: 13.899±1.66
+  H12 vs kan             med diff   -2.855  p=0.0000  q=0.0000
+  H12 vs mlp8x8          med diff   -5.730  p=0.0000  q=0.0000
+  H12 vs mlp16           med diff   -5.630  p=0.0001  q=0.0001
+  H12 vs linear          med diff   -7.664  p=0.0000  q=0.0000
+  H16 vs kan             med diff   -3.950  p=0.0010  q=0.0011
+  H16 vs mlp8x8          med diff   -8.434  p=0.0000  q=0.0000
+  H16 vs mlp16           med diff   -9.903  p=0.0000  q=0.0000
+  H16 vs linear          med diff   -9.922  p=0.0000  q=0.0000
+  H18 vs kan             med diff   -0.188  p=0.8983  q=0.8983
+  H18 vs mlp8x8          med diff   -4.257  p=0.0002  q=0.0002
+  H18 vs mlp16           med diff   -5.085  p=0.0003  q=0.0004
+  H18 vs linear          med diff   -5.434  p=0.0001  q=0.0001
+  H12s vs kan            med diff   -3.587  p=0.0000  q=0.0000
+  H12s vs mlp8x8         med diff   -5.558  p=0.0000  q=0.0000
+  H12s vs mlp16          med diff   -7.199  p=0.0002  q=0.0002
+  H12s vs linear         med diff   -8.423  p=0.0000  q=0.0000
+  H12 vs tuned QNN       med diff   -2.402  p=0.0000  q=0.0000

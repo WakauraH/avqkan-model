@@ -1,0 +1,32 @@
+{
+  "method": "qnn",
+  "target": "expo",
+  "seed": 3,
+  "layers": 2,
+  "opt": "cobyla",
+  "maxiter": 1000,
+  "restarts": 1,
+  "nq": 4,
+  "n_params": 16,
+  "config": {
+    "nq": 4,
+    "dim": 3,
+    "grids": 8,
+    "ng": 8,
+    "ndT": 3,
+    "n_train": 10,
+    "n_test": 50,
+    "readout": [
+      0,
+      1
+    ],
+    "readout_mode": "single",
+    "spline_eval": "direct",
+    "encoding": "code",
+    "ng_growth": false,
+    "weighting": true,
+    "shots": 0,
+    "seed": 3
+  },
+  "elapsed_sec": 21.57
+}

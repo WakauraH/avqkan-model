@@ -15,6 +15,15 @@ SEEDS = range(30, 50)
 
 def job(a):
     d, s, shots = a
+    import os, csv
+    out = "results_model_confirm_s256" if shots else "results_model_confirm"
+    done = os.path.join(out, f"cobyla_sepn{d}_seed{s}_nq{d}_m30.csv")
+    if shots >= 0 and os.path.exists(done):   # 再起動時に完了済みはスキップ
+        rows = list(csv.DictReader(open(done)))
+        co = [float(r["cost"]) for r in rows]
+        return d, s, shots, float(rows[co.index(min(co))]["test_absdist"]), 0
+    if shots == -1 and os.path.exists(f"results_model_confirm_qnn/qnn3_lbfgs_sepn{d}_seed{s}_nq{d}.csv"):
+        return d, s, shots, float("nan"), 0
     if shots == -1:   # 副次: d=12 の調整済み QNN（L はシードごとに訓練コストで選ぶ）
         for L in (1, 2, 3):
             run_qnn(f"sepn{d}", s, "results_model_confirm_qnn", layers=L, opt="lbfgs",
