@@ -143,8 +143,31 @@ def t5_spline_quantization():
         len(np.unique(np.round(direct_vals, 12))) > 150)
 
 
+def t6_model_paper_additions():
+    print("T6 QNN ベースライン / 成長則 way 1 / プール / 初期アンザッツ")
+    cfg = A.Config(seed=0)
+    prob = A.Problem(cfg, "eq6")
+    th = np.random.default_rng(0).random(24) * 2 * np.pi
+    psi = A.qnn_forward(th, prob.X[0], cfg, 3)
+    h = A.expval_diag(psi, prob.Hsign)
+    _ok(f"QNN 3 層 = 24 パラメータ, 状態は規格化 (|psi|²={np.vdot(psi, psi).real:.6f})",
+        abs(np.vdot(psi, psi).real - 1) < 1e-9 and -1 <= h <= 1)
+    pool_p, lab_p = A.build_pool(4, "paper")
+    pool_f, lab_f = A.build_pool(4, "full")
+    _ok(f"プール: paper={len(pool_p)} (=4*3+6*6), full={len(pool_f)} (=4*3+6*9)",
+        len(pool_p) == 48 and len(pool_f) == 66 and "Y0X1" in lab_f and "Y0X1" not in lab_p)
+    _ok("parse_op('Y0Z2') はプールの Y0Z2 と一致",
+        A.parse_op("Y0Z2").to_expr().simplify() == pool_p[lab_p.index("Y0Z2")].to_expr().simplify())
+    cluster = [[pauli.X[1]], [], []]
+    v = np.zeros(A.n_params(cluster, cfg))
+    v2, c2, added2, _ = A.grow_ansatz(v, cluster, prob, pool_p, lab_p, select="cost")
+    v1, c1, added1, _ = A.grow_ansatz(v, cluster, prob, pool_p, lab_p, select="grad")
+    _ok(f"way 2 は 1 項成長 ({added2}), way 1 も 1 項成長 ({added1}), パラメータ数 8→16",
+        added2 is not None and added1 is not None and len(v2) == 16 and len(v1) == 16)
+
+
 if __name__ == "__main__":
     for fn in (t1_qubit_order, t2_swap_test_equivalence, t3_metric_psd,
-               t4_gradient, t5_spline_quantization):
+               t4_gradient, t5_spline_quantization, t6_model_paper_additions):
         fn()
     print("\nすべて成功")

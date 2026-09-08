@@ -94,7 +94,9 @@ def make_sepsin(d):
 _SEPN_STATS = {4: (1.123063, 0.415513), 6: (1.684815, 0.509674),
                8: (2.244644, 0.587657), 10: (2.806651, 0.657629),
                12: (3.367388, 0.719816), 14: (3.928791, 0.777606),
-               16: (4.487510, 0.834387)}
+               16: (4.487510, 0.834387),
+               # d=18, 20 は 2026-09-08 に同じ手順（シード 20260819, 2e5 点）で追加
+               18: (5.052949, 0.880976), 20: (5.611731, 0.928373)}
 
 
 def make_sepsin_norm(d, k=2.5):
@@ -123,6 +125,8 @@ TARGETS = {
     "sepn12": make_sepsin_norm(12),
     "sepn14": make_sepsin_norm(14),
     "sepn16": make_sepsin_norm(16),
+    "sepn18": make_sepsin_norm(18),
+    "sepn20": make_sepsin_norm(20),
     "log":    (_t_log, 2),
     "frac":   (_t_frac, 2),
     "radius": (_t_radius, 3),
@@ -571,7 +575,9 @@ def ite_step(vlist, cluster, prob: Problem, delta, reg=1e-6, eta=1e-4,
 # アンザッツ成長（原 `adaptive()` の way 2。診断書 C-3 の para スコープ問題を修正）
 # --------------------------------------------------------------------------
 
-def build_pool(nq):
+def build_pool(nq, kind="paper"):
+    """演算子プール。kind="paper": 一体 X,Y,Z と二体 XX,XY,XZ,YY,YZ,ZZ（論文の限定プール）。
+    kind="full": 二体を 9 通り全部（YX, ZX, ZY を追加。論文 Discussion の拡張プール）。"""
     pool, label = [], []
     for j in range(nq):
         for nm, op in (("X", pauli.X), ("Y", pauli.Y), ("Z", pauli.Z)):
@@ -580,23 +586,52 @@ def build_pool(nq):
             a = [("X", pauli.X[j]), ("Y", pauli.Y[j]), ("Z", pauli.Z[j])]
             b = [("X", pauli.X[k]), ("Y", pauli.Y[k]), ("Z", pauli.Z[k])]
             for l in range(3):
-                for m in range(l, 3):
+                for m in range(l if kind == "paper" else 0, 3):
                     pool.append(a[l][1] * b[m][1])
                     label.append(f"{a[l][0]}{j}{b[m][0]}{k}")
     return pool, label
 
 
-def grow_ansatz(vlist, cluster, prob: Problem, pool, labels, frame=0, rng=None):
-    """way 2: プールの各演算子を末尾に追加し、コストが最も下がるものを採用する。
-    採用時のパラメータは原実装どおり 0 で初期化する。"""
+def parse_op(label):
+    """"X1", "Y0Z2" のようなラベルを blueqat の Pauli 演算子にする。"""
+    ops = {"X": pauli.X, "Y": pauli.Y, "Z": pauli.Z}
+    import re
+    parts = re.findall(r"([XYZ])(\d+)", label)
+    if not parts or "".join(a + b for a, b in parts) != label:
+        raise ValueError(label)
+    out = None
+    for nm, q in parts:
+        op = ops[nm][int(q)]
+        out = op if out is None else out * op
+    return out
+
+
+def grow_ansatz(vlist, cluster, prob: Problem, pool, labels, frame=0, rng=None,
+                select="cost", eps=1e-2):
+    """アンザッツを 1 項成長させる。採用時のパラメータは原実装どおり 0 で初期化する。
+
+    select="cost" (way 2): 各演算子を末尾に追加してコストを評価し、最も下がるものを採用。
+                           どの候補もコストを下げなければ成長しない。
+    select="grad" (way 1): 各演算子を係数 0 で追加したときの、係数ブロック一様シフトに
+                           対するコスト勾配 |dC/dc| が最大のものを採用（中心差分、幅 eps）。
+                           原実装は Hadamard テストで同じ角度微分を測っていた。"""
     cfg = prob.cfg
     base, _ = prob.cost(vlist, cluster, None, rng)
     best, best_idx = base, None
+    score_best = -1.0
     for i, op in enumerate(pool):
         trial_cluster = [list(cl) for cl in cluster]
         trial_cluster[frame] = trial_cluster[frame] + [op]
         # 新しい係数はフレーム frame のブロック末尾に挿入される
         offset = sum(len(cluster[t]) for t in range(frame + 1)) * cfg.grids
+        if select == "grad":
+            vp = np.concatenate([vlist[:offset], np.full(cfg.grids, eps), vlist[offset:]])
+            vm = np.concatenate([vlist[:offset], np.full(cfg.grids, -eps), vlist[offset:]])
+            g = abs(prob.cost(vp, trial_cluster, None, rng)[0]
+                    - prob.cost(vm, trial_cluster, None, rng)[0]) / (2 * eps)
+            if g > score_best:
+                score_best, best_idx = g, i
+            continue
         trial_v = np.concatenate([vlist[:offset], np.zeros(cfg.grids), vlist[offset:]])
         c, _ = prob.cost(trial_v, trial_cluster, None, rng)
         if c < best:
@@ -616,21 +651,124 @@ def grow_ansatz(vlist, cluster, prob: Problem, pool, labels, frame=0, rng=None):
 # 実行ドライバ
 # --------------------------------------------------------------------------
 
+# --------------------------------------------------------------------------
+# QNN ベースライン（論文 Fig. 2 の hardware-efficient ansatz）
+# --------------------------------------------------------------------------
+
+def qnn_forward(theta, x, cfg: Config, layers):
+    """1 層 = Ry(θ) 全量子ビット → CZ 梯子 → Rx(2 x_j)（j < dim）→ Ry(θ) → CZ 梯子。
+    初期状態 |0…0⟩。1 層あたり 2·nq パラメータ（nq=4, 3 層で論文どおり 24）。"""
+    FORWARD_CALLS["n"] += 1
+    nq = cfg.nq
+    c = Circuit(nq)
+    k = 0
+    for _ in range(layers):
+        for j in range(nq):
+            c.ry(theta[k + j])[j]
+        for j in range(nq - 1):
+            c.cz[j, j + 1]
+        for j in range(cfg.dim):
+            c.rx(2 * x[j])[j]
+        for j in range(nq):
+            c.ry(theta[k + nq + j])[j]
+        for j in range(nq - 1):
+            c.cz[j, j + 1]
+        k += 2 * nq
+    return c.run(returns="statevector")
+
+
+def run_qnn(target, seed, out_dir, layers=3, opt="cobyla", maxiter=1000,
+            restarts=1, nq=4, readout_mode="single", verbose=True, tag_suffix=""):
+    """QNN を VQKAN と同じ回帰コスト・同じ訓練/テスト点で訓練する。
+
+    opt="cobyla": 論文どおり（乱数初期化、COBYLA、maxiter=1000）。
+    opt="lbfgs" : 調整済みベースライン。L-BFGS-B（数値勾配）を restarts 回の乱数初期値から
+                  走らせ、訓練コスト最小の系列を採用する。
+    出力 CSV の各行は最適化器の 1 反復（run() と同じ列）。"""
+    cfg = Config(nq=nq, seed=seed, readout_mode=readout_mode)
+    prob = Problem(cfg, target)
+    rng = np.random.default_rng(seed + 12345)
+    P = 2 * nq * layers
+
+    def outputs(theta, X):
+        return np.array([expval_diag(qnn_forward(theta, x, cfg, layers), prob.Hsign)
+                         for x in X])
+
+    def cost(theta):
+        h = outputs(theta, prob.X)
+        return float(np.sum(prob.w * (h - prob.f) ** 2))
+
+    FORWARD_CALLS["n"] = 0
+    t0 = time.time()
+    best_rows, best_final_cost = None, np.inf
+    for r in range(restarts):
+        theta0 = rng.random(P) * 2 * np.pi
+        rows, report = [], [0]
+
+        def record(theta, step):
+            before = FORWARD_CALLS["n"]
+            h = outputs(theta, prob.X)
+            C = float(np.sum(prob.w * (h - prob.f) ** 2))
+            te = float(np.sum(np.abs(outputs(theta, prob.Xf) - prob.ff)))
+            report[0] += FORWARD_CALLS["n"] - before
+            rows.append(dict(step=step, tau=float("nan"), cost=C,
+                             forward_calls=FORWARD_CALLS["n"],
+                             opt_calls=FORWARD_CALLS["n"] - report[0],
+                             train_absdist=prob.train_absdist(h), test_absdist=te,
+                             n_params=P, grad_norm=float("nan"),
+                             ansatz=f"qnn_L{layers}_r{r}"))
+
+        it = [0]
+
+        def cb(theta, *_):
+            record(np.asarray(theta), it[0]); it[0] += 1
+
+        record(theta0, it[0]); it[0] += 1
+        if opt == "cobyla":
+            res = smin(cost, theta0, method="COBYLA", callback=cb,
+                       options={"disp": False, "maxiter": maxiter})
+        else:
+            res = smin(cost, theta0, method="L-BFGS-B", callback=cb,
+                       options={"maxiter": maxiter, "eps": 1e-6})
+        record(np.asarray(res.x), it[0])
+        if verbose:
+            print(f"[qnn{layers}/{opt}/{target}/s{seed}] restart {r}  "
+                  f"C={rows[-1]['cost']:.4f}  test={rows[-1]['test_absdist']:.4f}")
+        if rows[-1]["cost"] < best_final_cost:
+            best_final_cost, best_rows = rows[-1]["cost"], rows
+
+    os.makedirs(out_dir, exist_ok=True)
+    tag = f"qnn{layers}_{opt}_{target}_seed{seed}{tag_suffix}"
+    with open(os.path.join(out_dir, f"{tag}.csv"), "w", newline="") as fp:
+        wtr = csv.DictWriter(fp, fieldnames=list(best_rows[0].keys()))
+        wtr.writeheader(); wtr.writerows(best_rows)
+    meta = dict(method="qnn", target=target, seed=seed, layers=layers, opt=opt,
+                maxiter=maxiter, restarts=restarts, nq=nq, n_params=P,
+                config=asdict(cfg), elapsed_sec=round(time.time() - t0, 2))
+    with open(os.path.join(out_dir, f"{tag}.json"), "w") as fp:
+        json.dump(meta, fp, indent=2, default=str)
+    return best_rows, meta
+
+
 def run(method, target, seed, steps, delta, grow_every, out_dir,
         spline_eval="direct", ng_growth=False, kick=0.0, maxiter=1000,
         grids=8, ndT=3, verbose=True, shots=0, nq=4, tag_suffix="",
         readout_mode="single", ite_reg=1e-3, eta_m=0.3, spsa_resamplings=1,
-        force_fd_metric=False, encoding="code"):
+        force_fd_metric=False, encoding="code", init="X1", pool_kind="paper",
+        select="cost", n_train=10):
     cfg = Config(nq=nq, seed=seed, grids=grids, ng=grids, ndT=ndT,
                  spline_eval=spline_eval, ng_growth=ng_growth, shots=shots,
-                 readout_mode=readout_mode, encoding=encoding)
+                 readout_mode=readout_mode, encoding=encoding, n_train=n_train)
     prob = Problem(cfg, target)
     rng = np.random.default_rng(seed + 12345)
     # 測定用の乱数は最適化用と分離する（ショット雑音の再現性のため）
     mrng = np.random.default_rng(seed + 99991) if shots else None
 
-    pool, labels = build_pool(cfg.nq)
-    cluster = [[pauli.X[1]], [], []][:cfg.ndT]
+    pool, labels = build_pool(cfg.nq, pool_kind)
+    # 初期アンザッツ: "X1" のほか "X1,Z0"（同一フレーム）や "X1|X1"（フレームごと）を受ける
+    cluster = [[] for _ in range(cfg.ndT)]
+    for t, frame in enumerate(init.split("|")[:cfg.ndT]):
+        cluster[t] = [parse_op(s) for s in frame.split(",") if s]
     vlist = np.zeros(n_params(cluster, cfg))
     ng = cfg.ng
 
@@ -697,7 +835,8 @@ def run(method, target, seed, steps, delta, grow_every, out_dir,
                   f"C={C:10.4f}  train={tr:8.4f}  test={te:8.4f}  P={len(vlist)}")
 
         if grow_every and (step + 1) % grow_every == 0 and step + 1 < steps:
-            vlist, cluster, added, _ = grow_ansatz(vlist, cluster, prob, pool, labels, 0, mrng)
+            vlist, cluster, added, _ = grow_ansatz(vlist, cluster, prob, pool, labels, 0, mrng,
+                                                   select=select)
             if verbose:
                 print(f"    -> ansatz grown with {added} (P={len(vlist)})")
 
@@ -709,6 +848,7 @@ def run(method, target, seed, steps, delta, grow_every, out_dir,
     meta = dict(method=method, target=target, seed=seed, steps=steps, delta=delta,
                 shots=shots, nq=nq, ite_reg=ite_reg, eta_m=eta_m,
                 grow_every=grow_every, kick=kick, maxiter=maxiter,
+                init=init, pool_kind=pool_kind, select=select, n_train=n_train,
                 config=asdict(cfg), elapsed_sec=round(time.time() - t0, 2))
     with open(os.path.join(out_dir, f"{tag}.json"), "w") as fp:
         json.dump(meta, fp, indent=2, default=str)
@@ -719,8 +859,17 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--method",
-                    choices=["legacy", "ite", "gd", "cobyla", "ite_spsa", "ite_ctl"],
+                    choices=["legacy", "ite", "gd", "cobyla", "ite_spsa", "ite_ctl", "qnn"],
                     default="ite")
+    ap.add_argument("--init", default="X1",
+                    help='初期アンザッツ。"X1", "Z0", "X1,Z0"（同一フレーム）, "X1|X1"（フレーム別）')
+    ap.add_argument("--pool", choices=["paper", "full"], default="paper")
+    ap.add_argument("--select", choices=["cost", "grad"], default="cost",
+                    help="成長則: cost = way 2（既定）, grad = way 1")
+    ap.add_argument("--qnn-layers", type=int, default=3)
+    ap.add_argument("--qnn-opt", choices=["cobyla", "lbfgs"], default="cobyla")
+    ap.add_argument("--qnn-restarts", type=int, default=1)
+    ap.add_argument("--n-train", type=int, default=10, help="訓練点数（テストは常に 50 点）")
     ap.add_argument("--target", choices=sorted(TARGETS), default="log")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--steps", type=int, default=60)
@@ -742,9 +891,15 @@ def main():
     ap.add_argument("--encoding", choices=["code", "paper"], default="code")
     ap.add_argument("--out", default="results")
     a = ap.parse_args()
+    if a.method == "qnn":
+        run_qnn(a.target, a.seed, a.out, layers=a.qnn_layers, opt=a.qnn_opt,
+                maxiter=a.maxiter, restarts=a.qnn_restarts, nq=a.nq,
+                readout_mode=a.readout_mode)
+        return
     run(a.method, a.target, a.seed, a.steps, a.delta, a.grow_every, a.out,
         a.spline_eval, a.ng_growth, a.kick, a.maxiter, a.grids, a.ndT,
-        shots=a.shots, nq=a.nq, readout_mode=a.readout_mode, encoding=a.encoding)
+        shots=a.shots, nq=a.nq, readout_mode=a.readout_mode, encoding=a.encoding,
+        init=a.init, pool_kind=a.pool, select=a.select, n_train=a.n_train)
 
 
 if __name__ == "__main__":
