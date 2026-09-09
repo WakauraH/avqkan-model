@@ -12,13 +12,21 @@ see the section "Companion study" below.
 
 ```bash
 pip install -r requirements.txt
+./reproduce.sh                             # everything below in one go (a few minutes)
+```
+
+or step by step:
+
+```bash
 python test_avqkan.py                      # validation tests T1-T6
+python qiskit_bridge.py --test             # blueqat -> qiskit translation check
 python analyze_model.py                    # Fig. 2 table, ablation (Table 1)  -> results_model/table_fig2.md
 python analyze_model_confirm.py            # pre-registered study (Table 3)      -> stdout
 python classical_regularized.py sepn12 12 10 30-49 results_model_confirm/cobyla_sepn12_seedSEED_nq12_m30.csv
 python analyze_nsweep.py                   # sample-size sweep (Fig. 5)
 python analyze_cls.py                      # classification (Appendix A)
-python gen_model_figs.py                   # Figs. 2-5 and Table 2            -> figs_model/
+python analyze_noise.py                    # gate noise + hardware (Sec. 3.3, Table 1) -> results_model/noise_summary.md
+python gen_model_figs.py                   # Figs. 2-5 and resource table       -> figs_model/
 ```
 
 All result CSVs are included, so the analyses run in minutes. To regenerate the raw data:
@@ -32,6 +40,9 @@ All result CSVs are included, so the analyses run in minutes. To regenerate the 
 | Fig. 4 finite shots | `python run_shots_eq6.py`; the d=12 arm is part of `run_model_confirm.py` |
 | Fig. 5 sample-size sweep | `python run_nsweep.py` |
 | Appendix A classification | `python run_cls.py` |
+| Saved model parameters (`models/`) | `python run_save_models.py` (deterministic re-training) |
+| Gate-noise inference / noisy training | `python noise_study.py --models "models/d4/*.json"`, `--models "models/d12/*.json"`, `--backend-noise ibm_marrakesh`, `--train --seed S` |
+| Hardware inference | `python hardware_inference.py --backend ibm_marrakesh --models "models/hw_batch/*.json" --submit`, then `--collect <job_id>` (needs a saved IBM Quantum account; the paper's jobs are in `results_hardware/`) |
 
 `PREREGISTRATION_model.md` was committed (74a528d) before any run in `results_model_confirm*/`
 was launched; `analyze_model_confirm.py` is the frozen analysis. The kernel-ridge comparison

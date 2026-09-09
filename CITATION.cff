@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+title: "avqkan-model: few-sample regression with an adaptively grown variational quantum Kolmogorov-Arnold network"
+message: "If you use this code or data, please cite the paper (arXiv:2503.21336)."
+authors:
+  - family-names: Wakaura
+    given-names: Hikaru
+  - family-names: Mulyawan
+    given-names: Rahmat
+  - family-names: Suksmono
+    given-names: Andriyan B.
+repository-code: "https://github.com/WakauraH/avqkan-model"
+license: MIT
