@@ -1,6 +1,44 @@
-# Natural-gradient imaginary-time optimization of Adaptive VQKAN
+# Few-sample regression with an adaptively grown variational quantum Kolmogorov-Arnold network
 
-Reference implementation and full data for the paper
+Reference implementation, pre-registration, and full data for
+
+> H. Wakaura, R. Mulyawan, A. B. Suksmono, *Few-sample regression with an adaptively grown
+> variational quantum Kolmogorov-Arnold network* (revision of arXiv:2503.21336).
+
+The repository also contains the training-rule study of the companion paper (arXiv:2506.22801);
+see the section "Companion study" below.
+
+## Reproducing the paper
+
+```bash
+pip install -r requirements.txt
+python test_avqkan.py                      # validation tests T1-T6
+python analyze_model.py                    # Fig. 2 table, ablation (Table 1)  -> results_model/table_fig2.md
+python analyze_model_confirm.py            # pre-registered study (Table 3)      -> stdout
+python classical_regularized.py sepn12 12 10 30-49 results_model_confirm/cobyla_sepn12_seedSEED_nq12_m30.csv
+python analyze_nsweep.py                   # sample-size sweep (Fig. 5)
+python analyze_cls.py                      # classification (Appendix A)
+python gen_model_figs.py                   # Figs. 2-5 and Table 2            -> figs_model/
+```
+
+All result CSVs are included, so the analyses run in minutes. To regenerate the raw data:
+
+| Paper item | Command |
+|---|---|
+| Fig. 2 quantum arm (d=4, 5 targets, seeds 0-9) | `python run_compare.py <target> 10` (cobyla arm) |
+| Fig. 2 QNN arms | `python run_qnn_sweep.py` |
+| Table 1 ablation | `python run_ablation.py` |
+| Fig. 3 / Table 3 pre-registered study (seeds 30-49) | `python run_model_confirm.py` (after reading `PREREGISTRATION_model.md`) |
+| Fig. 4 finite shots | `python run_shots_eq6.py`; the d=12 arm is part of `run_model_confirm.py` |
+| Fig. 5 sample-size sweep | `python run_nsweep.py` |
+| Appendix A classification | `python run_cls.py` |
+
+`PREREGISTRATION_model.md` was committed (74a528d) before any run in `results_model_confirm*/`
+was launched; `analyze_model_confirm.py` is the frozen analysis. The kernel-ridge comparison
+(`classical_regularized.py`) was added after the development seeds had been analysed and is
+labelled post hoc in the paper.
+
+## Companion study (training rules)
 
 > H. Wakaura, R. Mulyawan, A. B. Suksmono,
 > *Natural-gradient imaginary-time optimization of Adaptive Variational Quantum
@@ -14,7 +52,9 @@ baselines compared in the paper (the fidelity-objective VarQITE of arXiv
 v1, COBYLA, plain gradient descent, classical KAN/MLP), the finite-shot and
 metric-estimator studies, and every CSV underlying the figures and tables.
 
+
 ## Install
+
 
 ```bash
 pip install -r requirements.txt

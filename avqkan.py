@@ -110,7 +110,27 @@ def make_sepsin_norm(d, k=2.5):
     return f, d
 
 
+def make_cls2d(seed):
+    """v3 §Classification の 2 次元分類を、クラスが均衡するよう標準化した版。
+    境界 g(u0) = exp(d0 u0 + d1) + d2 sqrt(1 - d3 u0^2) + cos(d4 u0 + d5) + sin(d6 u0 + d7),
+    d_k ~ U[0,1]（シードごと）, u = 2x - 1。g を [-1,1] 上の格子で min-max 正規化して
+    [-1,1] に写し、ラベル = +1 if u1 > g̃(u0) else -1。（v3 の生の g は常に u1 を上回り、
+    ほぼ全点が同一ラベルになる。）"""
+    d = np.random.default_rng(seed + 777).random(8)
+    def g(u0):
+        return (np.exp(d[0] * u0 + d[1]) + d[2] * np.sqrt(np.clip(1 - d[3] * u0 ** 2, 0, None))
+                + np.cos(d[4] * u0 + d[5]) + np.sin(d[6] * u0 + d[7]))
+    grid = np.linspace(-1, 1, 401)
+    lo, hi = g(grid).min(), g(grid).max()
+    def f(x):
+        u0, u1 = 2 * x[0] - 1, 2 * x[1] - 1
+        gt = (g(u0) - lo) / (hi - lo) * 2 - 1
+        return 1.0 if u1 > gt else -1.0
+    return f, 2
+
+
 TARGETS = {
+    "cls2d":  (None, 2),          # Problem.__init__ でシードごとに make_cls2d を呼ぶ
     "eq6":    (_t_eq6, 4),
     "sep4":   make_sepsin(4),
     "sep6":   make_sepsin(6),
@@ -287,6 +307,9 @@ class Problem:
     def __init__(self, cfg: Config, target_name: str):
         self.cfg = cfg
         self.fn, nvar = TARGETS[target_name]
+        self.task = "cls" if target_name.startswith("cls") else "reg"
+        if self.task == "cls":
+            self.fn, nvar = make_cls2d(cfg.seed)
         cfg.dim = nvar
         self.target_name = target_name
         if cfg.readout_mode == "single_scaled":
@@ -325,16 +348,31 @@ class Problem:
                 out.append(expval_diag(psi, self.Hsign))
         return np.array(out)
 
+    def cost_h(self, h):
+        """出力 h（訓練点）に対するコスト。回帰: 重み付き二乗誤差。分類: BCE
+        （p = (h+1)/2 を確率と見なす。v3 は ±1 への L1 で、これは微分不能な段差を生む）。"""
+        if self.task == "cls":
+            p = np.clip((h + 1) / 2, 1e-6, 1 - 1e-6)
+            y = (self.f + 1) / 2
+            return float(-np.sum(y * np.log(p) + (1 - y) * np.log(1 - p)))
+        return float(np.sum(self.w * (h - self.f) ** 2))
+
+    def err(self, h, target):
+        """報告用の誤差。回帰: 絶対距離の和。分類: 誤分類数（sign(h) vs ラベル）。"""
+        if self.task == "cls":
+            return float(np.sum(np.sign(h) != target))
+        return float(np.sum(np.abs(h - target)))
+
     def cost(self, vlist, cluster, ng=None, rng=None):
         h = self.outputs(vlist, cluster, self.X, ng, rng)
-        return float(np.sum(self.w * (h - self.f) ** 2)), h
+        return self.cost_h(h), h
 
     def train_absdist(self, h):
-        return float(np.sum(np.abs(h - self.f)))
+        return self.err(h, self.f)
 
     def test_absdist(self, vlist, cluster, ng=None):
         h = self.outputs(vlist, cluster, self.Xf, ng)
-        return float(np.sum(np.abs(h - self.ff)))
+        return self.err(h, self.ff)
 
 
 # --------------------------------------------------------------------------
@@ -695,8 +733,7 @@ def run_qnn(target, seed, out_dir, layers=3, opt="cobyla", maxiter=1000,
                          for x in X])
 
     def cost(theta):
-        h = outputs(theta, prob.X)
-        return float(np.sum(prob.w * (h - prob.f) ** 2))
+        return prob.cost_h(outputs(theta, prob.X))
 
     FORWARD_CALLS["n"] = 0
     t0 = time.time()
@@ -708,8 +745,8 @@ def run_qnn(target, seed, out_dir, layers=3, opt="cobyla", maxiter=1000,
         def record(theta, step):
             before = FORWARD_CALLS["n"]
             h = outputs(theta, prob.X)
-            C = float(np.sum(prob.w * (h - prob.f) ** 2))
-            te = float(np.sum(np.abs(outputs(theta, prob.Xf) - prob.ff)))
+            C = prob.cost_h(h)
+            te = prob.err(outputs(theta, prob.Xf), prob.ff)
             report[0] += FORWARD_CALLS["n"] - before
             rows.append(dict(step=step, tau=float("nan"), cost=C,
                              forward_calls=FORWARD_CALLS["n"],
