@@ -3,3 +3,6 @@ __pycache__/
 figs/
 *.log
 .DS_Store
+joblog*.txt
+*.egg-info/
+.venv/
