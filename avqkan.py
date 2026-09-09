@@ -811,6 +811,7 @@ def run(method, target, seed, steps, delta, grow_every, out_dir,
 
     rows = []
     tau = 0.0
+    best = dict(cost=float("inf"))   # 訓練コスト最小ステップのモデル（実機推論・雑音評価用）
     report_calls = 0          # 指標の記録に使った評価（最適化コストからは除外する）
     spsa_state = None
     FORWARD_CALLS["n"] = 0
@@ -857,6 +858,10 @@ def run(method, target, seed, steps, delta, grow_every, out_dir,
         C, h = prob.cost(vlist, cluster, ng)
         tr = prob.train_absdist(h)
         te = prob.test_absdist(vlist, cluster, ng)
+        if C < best["cost"]:
+            best = dict(cost=C, step=step, test_absdist=te, vlist=[float(v) for v in vlist],
+                        ansatz=[labels[pool.index(op)] if op in pool else "?" for cl in cluster for op in cl],
+                        frames=[len(cl) for cl in cluster])
         report_calls += FORWARD_CALLS["n"] - _calls_before_report
         tau += delta
         rows.append(dict(step=step, tau=round(tau, 6), cost=C,
@@ -887,6 +892,10 @@ def run(method, target, seed, steps, delta, grow_every, out_dir,
                 grow_every=grow_every, kick=kick, maxiter=maxiter,
                 init=init, pool_kind=pool_kind, select=select, n_train=n_train,
                 config=asdict(cfg), elapsed_sec=round(time.time() - t0, 2))
+    meta["best"] = best
+    meta["final"] = dict(vlist=[float(v) for v in vlist],
+                         ansatz=[labels[pool.index(op)] if op in pool else "?" for cl in cluster for op in cl],
+                         frames=[len(cl) for cl in cluster])
     with open(os.path.join(out_dir, f"{tag}.json"), "w") as fp:
         json.dump(meta, fp, indent=2, default=str)
     return rows, meta
