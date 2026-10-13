@@ -129,6 +129,45 @@ def make_cls2d(seed):
     return f, 2
 
 
+# --------------------------------------------------------------------------
+# 探索用の標準化関数族（2026-10）: "<family>_<d>" という名前で動的に生成する。
+# すべて z(x) を一様乱数 2e5 点（シード 20260819）のモンテカルロで標準化し
+# f = clip((z − μ)/(2.5 σ), −1, 1) とする（sepn と同じ手順）。
+# --------------------------------------------------------------------------
+_FAMILIES = {
+    # 対称・加法・高周波: モデルの帰納バイアス（入力で共有されたスプラインの和）に合う
+    "symsin2": lambda X: np.sin(2 * np.pi * 2 * X).sum(1),
+    "symsin3": lambda X: np.sin(2 * np.pi * 3 * X).sum(1),
+    # 対称・急峻: 和のしきい値
+    "step":    lambda X: np.tanh(8 * (X.sum(1) - X.shape[1] / 2) / np.sqrt(X.shape[1])),
+    # 対称・滑らか（RBF が得意なはずの対照）
+    "symsq":   lambda X: ((X - 0.5) ** 2).sum(1),
+    # 非対称・加法（入力ごとに周波数が違う。共有スプラインには不利な対照）
+    "addsin":  lambda X: np.sin(2 * np.pi * (1 + np.arange(X.shape[1]) % 3) * X).sum(1),
+    # ペア対称（既存 sepn と同形、比較用）
+    "sepn":    lambda X: np.sin(X[:, 0::2] ** 2 + X[:, 1::2] ** 2).sum(1),
+}
+_FAMILY_STATS = {}
+
+
+def make_family(name, d, k=2.5):
+    z = _FAMILIES[name]
+    if (name, d) not in _FAMILY_STATS:
+        X = np.random.default_rng(20260819).random((200000, d))
+        v = z(X); _FAMILY_STATS[(name, d)] = (float(v.mean()), float(v.std()))
+    mu, sd = _FAMILY_STATS[(name, d)]
+    def f(x):
+        return float(np.clip((z(np.asarray(x, float)[None, :d]) [0] - mu) / (k * sd), -1.0, 1.0))
+    return f, d
+
+
+def get_target(name):
+    if name in TARGETS:
+        return TARGETS[name]
+    fam, d = name.rsplit("_", 1)
+    return make_family(fam, int(d))
+
+
 TARGETS = {
     "cls2d":  (None, 2),          # Problem.__init__ でシードごとに make_cls2d を呼ぶ
     "eq6":    (_t_eq6, 4),
@@ -306,7 +345,7 @@ def n_params(cluster, cfg: Config) -> int:
 class Problem:
     def __init__(self, cfg: Config, target_name: str):
         self.cfg = cfg
-        self.fn, nvar = TARGETS[target_name]
+        self.fn, nvar = get_target(target_name)
         self.task = "cls" if target_name.startswith("cls") else "reg"
         if self.task == "cls":
             self.fn, nvar = make_cls2d(cfg.seed)
@@ -319,6 +358,8 @@ class Problem:
             npair = cfg.nq // 2
             self.Hsign = sum(diag_signs([2 * j, 2 * j + 1], cfg.nq)
                              for j in range(npair)) / npair
+        elif cfg.readout_mode == "sum_z":
+            self.Hsign = sum(diag_signs([j], cfg.nq) for j in range(cfg.nq)) / cfg.nq
         else:
             self.Hsign = diag_signs(list(cfg.readout), cfg.nq)
 
@@ -916,7 +957,8 @@ def main():
     ap.add_argument("--qnn-opt", choices=["cobyla", "lbfgs"], default="cobyla")
     ap.add_argument("--qnn-restarts", type=int, default=1)
     ap.add_argument("--n-train", type=int, default=10, help="訓練点数（テストは常に 50 点）")
-    ap.add_argument("--target", choices=sorted(TARGETS), default="log")
+    ap.add_argument("--target", default="log",
+                    help="TARGETS のキー、または '<family>_<d>'（family: " + ", ".join(_FAMILIES) + "）")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--steps", type=int, default=60)
     ap.add_argument("--delta", type=float, default=0.1)
@@ -932,7 +974,7 @@ def main():
     ap.add_argument("--shots", type=int, default=0, help="0 で無限ショット")
     ap.add_argument("--nq", type=int, default=4)
     ap.add_argument("--readout-mode",
-                    choices=["single", "all_pairs", "single_scaled"],
+                    choices=["single", "all_pairs", "single_scaled", "sum_z"],
                     default="single")
     ap.add_argument("--encoding", choices=["code", "paper"], default="code")
     ap.add_argument("--out", default="results")
