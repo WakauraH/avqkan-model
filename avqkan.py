@@ -255,6 +255,13 @@ class Config:
     weighting: bool = True       # 原実装の重み (B - fn)/B
     shots: int = 0               # 0 = 無限ショット（状態ベクトル厳密）
     seed: int = 0
+    spline_share: str = "shared"  # "shared"（演算子ごと 1 本を全入力で共有）| "per_input"（入力ごとに独立）
+    angle_map: str = "arccos"     # "arccos"（原実装の 2arccos(...) と mod 2π）| "tanh"（tanh(Σ) の平滑写像）
+
+
+def blk(cfg: "Config") -> int:
+    """演算子 1 個あたりのパラメータ数。"""
+    return cfg.grids * (cfg.dim if cfg.spline_share == "per_input" else 1)
 
 
 # --------------------------------------------------------------------------
@@ -312,30 +319,46 @@ def kan_forward(vlist, x, cluster, cfg: Config, ng=None, rng=None):
         else:
             Sz = [expval_diag(psi, diag_signs([j], cfg.nq)) for j in range(cfg.nq)]
         val = []
+        B = blk(cfg)
         for j in range(len(clus)):
-            coef = vlist[cursor + j * cfg.grids: cursor + (j + 1) * cfg.grids]
-            spl = make_interp_spline(r0, coef, k=2)
-            grid_vals = spl(r)
-            pmin, pmax = float(np.min(grid_vals)), float(np.max(grid_vals))
-            denom = pmax + 1 / (1 + np.exp(-1)) - pmin
+            block = vlist[cursor + j * B: cursor + (j + 1) * B]
             xi = 0.0
+            spl_shared = None
+            if cfg.spline_share != "per_input":
+                spl_shared = make_interp_spline(r0, block, k=2)
+                grid_vals = spl_shared(r)
+                pmin, pmax = float(np.min(grid_vals)), float(np.max(grid_vals))
+                denom = pmax + 1 / (1 + np.exp(-1)) - pmin
             for w in range(cfg.dim):
                 xw = 0.5 * (Sz[w] + 1)
+                if cfg.spline_share == "per_input":
+                    spl = make_interp_spline(r0, block[w * cfg.grids:(w + 1) * cfg.grids], k=2)
+                    grid_vals = spl(r)
+                    pmin, pmax = float(np.min(grid_vals)), float(np.max(grid_vals))
+                    denom = pmax + 1 / (1 + np.exp(-1)) - pmin
+                else:
+                    spl = spl_shared
                 if cfg.spline_eval == "grid":
                     # 原実装: 評価格子上の最近傍を取る → 入力に対して ng 段の階段関数になる
                     phi = float(grid_vals[np.argmin(np.abs(r - xw))])
                 else:
                     phi = float(spl(xw))
-                ratio = (phi + xw / (1 + np.exp(-xw)) - pmin) / denom + _EPS
-                xi += 2 * np.arccos(np.clip(ratio, -1.0, 1.0))
-            val.append((xi % (2 * np.pi) - np.pi) / np.pi)
+                if cfg.angle_map == "tanh":
+                    xi += phi + xw / (1 + np.exp(-xw))
+                else:
+                    ratio = (phi + xw / (1 + np.exp(-xw)) - pmin) / denom + _EPS
+                    xi += 2 * np.arccos(np.clip(ratio, -1.0, 1.0))
+            if cfg.angle_map == "tanh":
+                val.append(float(np.tanh(xi)))
+            else:
+                val.append((xi % (2 * np.pi) - np.pi) / np.pi)
         c = apply_ansatz(c, val, clus, ndT_arg=1)
-        cursor += len(clus) * cfg.grids
+        cursor += len(clus) * B
     return c.run(returns="statevector")
 
 
 def n_params(cluster, cfg: Config) -> int:
-    return sum(len(cl) for cl in cluster) * cfg.grids
+    return sum(len(cl) for cl in cluster) * blk(cfg)
 
 
 # --------------------------------------------------------------------------
@@ -360,6 +383,13 @@ class Problem:
                              for j in range(npair)) / npair
         elif cfg.readout_mode == "sum_z":
             self.Hsign = sum(diag_signs([j], cfg.nq) for j in range(cfg.nq)) / cfg.nq
+        elif cfg.readout_mode == "linear_z":
+            # 同一の Z 基底測定から得られる全 1 体・2 体期待値を特徴量にし、リッジ重みを閉形式で学習する。
+            # 回路パラメータの目的関数は訓練集合の LOO 二乗誤差（λ も LOO で選ぶ）。
+            self.Hsign = None
+            self.Zfeat = [diag_signs([j], cfg.nq) for j in range(cfg.nq)] + \
+                         [diag_signs([j, k], cfg.nq) for j in range(cfg.nq) for k in range(j + 1, cfg.nq)]
+            self._lams = np.logspace(-4, 0, 5)
         else:
             self.Hsign = diag_signs(list(cfg.readout), cfg.nq)
 
@@ -377,9 +407,40 @@ class Problem:
         else:
             self.w = np.ones(cfg.n_train)
 
+    def features(self, vlist, cluster, X, ng=None, rng=None):
+        F = []
+        for x in X:
+            psi = kan_forward(vlist, x, cluster, self.cfg, ng, rng)
+            if rng is not None and self.cfg.shots:
+                emp = sample_probs(psi, self.cfg.shots, rng)
+                F.append([float(np.sum(emp * z)) for z in self.Zfeat])
+            else:
+                F.append([expval_diag(psi, z) for z in self.Zfeat])
+        return np.hstack([np.array(F), np.ones((len(X), 1))])
+
+    def _ridge_loo(self, F, y):
+        """λ をグリッドから LOO で選び、(LOO MSE, 重み) を返す。"""
+        n, m = F.shape
+        best = (np.inf, None)
+        for lam in self._lams:
+            A = F.T @ F + lam * np.eye(m); A[-1, -1] -= lam          # 定数項は正則化しない
+            Minv = np.linalg.pinv(A)
+            H = F @ Minv @ F.T
+            w = Minv @ F.T @ y
+            e = (y - F @ w) / np.clip(1 - np.diag(H), 1e-6, None)
+            loo = float(np.mean(e ** 2))
+            if loo < best[0]:
+                best = (loo, w)
+        return best
+
     def outputs(self, vlist, cluster, X, ng=None, rng=None):
         """rng を渡すと cfg.shots に従った有限ショット推定になる。
         評価指標の報告には rng=None（厳密値）を使うこと。"""
+        if self.cfg.readout_mode == "linear_z":
+            Ftr = self.features(vlist, cluster, self.X, ng, rng)
+            _, w = self._ridge_loo(Ftr, self.f)
+            F = Ftr if X is self.X else self.features(vlist, cluster, X, ng, rng)
+            return np.clip(F @ w, -1.0, 1.0)
         out = []
         for x in X:
             psi = kan_forward(vlist, x, cluster, self.cfg, ng, rng)
@@ -405,6 +466,10 @@ class Problem:
         return float(np.sum(np.abs(h - target)))
 
     def cost(self, vlist, cluster, ng=None, rng=None):
+        if self.cfg.readout_mode == "linear_z":
+            Ftr = self.features(vlist, cluster, self.X, ng, rng)
+            loo, w = self._ridge_loo(Ftr, self.f)
+            return loo * self.cfg.n_train, np.clip(Ftr @ w, -1.0, 1.0)
         h = self.outputs(vlist, cluster, self.X, ng, rng)
         return self.cost_h(h), h
 
@@ -702,16 +767,17 @@ def grow_ansatz(vlist, cluster, prob: Problem, pool, labels, frame=0, rng=None,
         trial_cluster = [list(cl) for cl in cluster]
         trial_cluster[frame] = trial_cluster[frame] + [op]
         # 新しい係数はフレーム frame のブロック末尾に挿入される
-        offset = sum(len(cluster[t]) for t in range(frame + 1)) * cfg.grids
+        B = blk(cfg)
+        offset = sum(len(cluster[t]) for t in range(frame + 1)) * B
         if select == "grad":
-            vp = np.concatenate([vlist[:offset], np.full(cfg.grids, eps), vlist[offset:]])
-            vm = np.concatenate([vlist[:offset], np.full(cfg.grids, -eps), vlist[offset:]])
+            vp = np.concatenate([vlist[:offset], np.full(B, eps), vlist[offset:]])
+            vm = np.concatenate([vlist[:offset], np.full(B, -eps), vlist[offset:]])
             g = abs(prob.cost(vp, trial_cluster, None, rng)[0]
                     - prob.cost(vm, trial_cluster, None, rng)[0]) / (2 * eps)
             if g > score_best:
                 score_best, best_idx = g, i
             continue
-        trial_v = np.concatenate([vlist[:offset], np.zeros(cfg.grids), vlist[offset:]])
+        trial_v = np.concatenate([vlist[:offset], np.zeros(B), vlist[offset:]])
         c, _ = prob.cost(trial_v, trial_cluster, None, rng)
         if c < best:
             best, best_idx = c, i
@@ -720,9 +786,8 @@ def grow_ansatz(vlist, cluster, prob: Problem, pool, labels, frame=0, rng=None,
     op = pool[best_idx]
     cluster = [list(cl) for cl in cluster]
     cluster[frame] = cluster[frame] + [op]
-    offset = sum(len(cluster[t]) for t in range(frame)) * cfg.grids \
-        + (len(cluster[frame]) - 1) * cfg.grids
-    vlist = np.concatenate([vlist[:offset], np.zeros(cfg.grids), vlist[offset:]])
+    offset = (sum(len(cluster[t]) for t in range(frame)) + len(cluster[frame]) - 1) * blk(cfg)
+    vlist = np.concatenate([vlist[:offset], np.zeros(blk(cfg)), vlist[offset:]])
     return vlist, cluster, labels[best_idx], best
 
 
@@ -833,10 +898,11 @@ def run(method, target, seed, steps, delta, grow_every, out_dir,
         grids=8, ndT=3, verbose=True, shots=0, nq=4, tag_suffix="",
         readout_mode="single", ite_reg=1e-3, eta_m=0.3, spsa_resamplings=1,
         force_fd_metric=False, encoding="code", init="X1", pool_kind="paper",
-        select="cost", n_train=10):
+        select="cost", n_train=10, spline_share="shared", angle_map="arccos"):
     cfg = Config(nq=nq, seed=seed, grids=grids, ng=grids, ndT=ndT,
                  spline_eval=spline_eval, ng_growth=ng_growth, shots=shots,
-                 readout_mode=readout_mode, encoding=encoding, n_train=n_train)
+                 readout_mode=readout_mode, encoding=encoding, n_train=n_train,
+                 spline_share=spline_share, angle_map=angle_map)
     prob = Problem(cfg, target)
     rng = np.random.default_rng(seed + 12345)
     # 測定用の乱数は最適化用と分離する（ショット雑音の再現性のため）
@@ -932,6 +998,7 @@ def run(method, target, seed, steps, delta, grow_every, out_dir,
                 shots=shots, nq=nq, ite_reg=ite_reg, eta_m=eta_m,
                 grow_every=grow_every, kick=kick, maxiter=maxiter,
                 init=init, pool_kind=pool_kind, select=select, n_train=n_train,
+                spline_share=spline_share, angle_map=angle_map,
                 config=asdict(cfg), elapsed_sec=round(time.time() - t0, 2))
     meta["best"] = best
     meta["final"] = dict(vlist=[float(v) for v in vlist],
@@ -957,6 +1024,8 @@ def main():
     ap.add_argument("--qnn-opt", choices=["cobyla", "lbfgs"], default="cobyla")
     ap.add_argument("--qnn-restarts", type=int, default=1)
     ap.add_argument("--n-train", type=int, default=10, help="訓練点数（テストは常に 50 点）")
+    ap.add_argument("--spline-share", choices=["shared", "per_input"], default="shared")
+    ap.add_argument("--angle-map", choices=["arccos", "tanh"], default="arccos")
     ap.add_argument("--target", default="log",
                     help="TARGETS のキー、または '<family>_<d>'（family: " + ", ".join(_FAMILIES) + "）")
     ap.add_argument("--seed", type=int, default=0)
@@ -974,7 +1043,7 @@ def main():
     ap.add_argument("--shots", type=int, default=0, help="0 で無限ショット")
     ap.add_argument("--nq", type=int, default=4)
     ap.add_argument("--readout-mode",
-                    choices=["single", "all_pairs", "single_scaled", "sum_z"],
+                    choices=["single", "all_pairs", "single_scaled", "sum_z", "linear_z"],
                     default="single")
     ap.add_argument("--encoding", choices=["code", "paper"], default="code")
     ap.add_argument("--out", default="results")
@@ -987,7 +1056,8 @@ def main():
     run(a.method, a.target, a.seed, a.steps, a.delta, a.grow_every, a.out,
         a.spline_eval, a.ng_growth, a.kick, a.maxiter, a.grids, a.ndT,
         shots=a.shots, nq=a.nq, readout_mode=a.readout_mode, encoding=a.encoding,
-        init=a.init, pool_kind=a.pool, select=a.select, n_train=a.n_train)
+        init=a.init, pool_kind=a.pool, select=a.select, n_train=a.n_train,
+        spline_share=a.spline_share, angle_map=a.angle_map)
 
 
 if __name__ == "__main__":
