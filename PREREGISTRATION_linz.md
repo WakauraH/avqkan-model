@@ -1,6 +1,6 @@
 # Pre-registered confirmatory test: linear-Z Adaptive VQKAN vs cross-validated kernels
 
-**Status: registered at the commit that adds this file, BEFORE any run in `results_linz_confirm/` was launched.**
+**Status: registered at commit 3faa5c5 (2026-10-14), BEFORE any run in `results_linz_confirm/` was launched.**
 
 ## Exploratory motivation (seeds 0–9, NOT confirmatory)
 Across 7 model variants × 4 targets × N ∈ {10, 40, 100} (`results_model/variants_summary.md`), exactly one cell
