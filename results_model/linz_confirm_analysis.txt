@@ -1,0 +1,10 @@
+quantum linz_m200_g5: 3.54 ± 1.81   const: 16.04 ± 2.07
+  H vs krr_rbf : classical 3.31 ± 0.56  median diff -0.27  p=0.5459  Holm p=0.8609  -> not significant
+  H vs krr_sort: classical 3.44 ± 0.46  median diff -0.38  p=0.4304  Holm p=0.8609  -> not significant
+VERDICT: claim NOT supported
+
+secondary (exploratory, BH):
+  linz_m200: 3.18 ± 1.22
+  krr_sym                      median diff -0.29  p=0.7285  q=0.9273
+  krr_add                      median diff -1.00  p=0.1327  q=0.3982
+  linz_m200 (growth 10) vs g5  median diff +0.01  p=0.9273  q=0.9273
