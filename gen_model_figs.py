@@ -11,9 +11,10 @@ from collections import Counter
 from avqkan import Config, Problem
 from classical_baseline import fit_kan, fit_mlp
 from classical_regularized import run as reg_run
+from classical_kernels import fit_predict
 
 OUT = "figs_model"; os.makedirs(OUT, exist_ok=True)
-CACHE = "results_model/figdata.json"
+CACHE = "results_model/figdata_v5.json"
 C = dict(avqkan="#2a78d6", qnn="#eb6834", cls="#1baf7a", krr="#4a3aa7", const="#7a7a76", shots="#eda100")
 plt.rcParams.update({"font.family": "Arial", "font.size": 8, "axes.labelsize": 8, "xtick.labelsize": 7,
                      "ytick.labelsize": 7, "legend.fontsize": 7, "axes.linewidth": 0.6,
@@ -71,6 +72,11 @@ def build_data():
         e.update(classical_arms(f"sepn{d}", d, seeds))
         reg, _ = reg_run(f"sepn{d}", d, 10, seeds)
         e["krr"] = reg["krr_rbf"].tolist(); e["gp"] = reg["gp_rbf"].tolist(); e["ridge"] = reg["ridge"].tolist()
+        e["krr_sort"] = []; e["krr_sym"] = []
+        for s_ in seeds:
+            pr = Problem(Config(nq=d, seed=s_), f"sepn{d}")
+            for k in ("krr_sort", "krr_sym"):
+                pred, _ = fit_predict(k, pr.X[:, :d], pr.f, pr.Xf[:, :d]); e[k].append(float(np.sum(np.abs(pred - pr.ff))))
         if d == 12:
             e["avqkan_s256"] = es("results_model_confirm_s256/cobyla_sepn12_seedSEED_nq12_m30.csv", seeds)
             e["qnn_tuned"] = es_qnn_tuned("results_model_confirm_qnn/qnnLAYER_lbfgs_sepn12_seedSEED_nq12.csv", seeds, (1, 2, 3))
@@ -85,7 +91,34 @@ def build_data():
     for N, v in ns.items():
         reg, _ = reg_run("sepn12", 12, int(N), range(10))
         v["krr"] = reg["krr_rbf"].tolist()
+        v["krr_sort"] = []
+        for s_ in range(10):
+            pr = Problem(Config(nq=12, seed=s_, n_train=int(N)), "sepn12")
+            pred, _ = fit_predict("krr_sort", pr.X[:, :12], pr.f, pr.Xf[:, :12]); v["krr_sort"].append(float(np.sum(np.abs(pred - pr.ff))))
         D["nsweep"][N] = v
+    # 線形 Z 読み出し（探索, seeds 0-9）と事前登録確証（seeds 30-49）
+    D["linz"] = {}
+    for t in ("sepn_12", "eq6"):
+        D["linz"][t] = {}
+        for N in (10, 40, 100):
+            for v in ("base", "base_m200", "linz", "linz_m200"):
+                pat = f"results_variants/cobyla_{t}_seedSEED_{v}_N{N}.csv"
+                if os.path.exists(pat.replace("SEED", "0")):
+                    D["linz"][t][f"{v}_N{N}"] = es(pat, range(10))
+            d_ = 12 if t == "sepn_12" else 4
+            for k in ("krr_rbf", "krr_sort"):
+                vals = []
+                for s_ in range(10):
+                    pr = Problem(Config(nq=d_, seed=s_, n_train=N), t); dd = pr.cfg.dim
+                    pred, _ = fit_predict(k, pr.X[:, :dd], pr.f, pr.Xf[:, :dd]); vals.append(float(np.sum(np.abs(pred - pr.ff))))
+                D["linz"][t][f"{k}_N{N}"] = vals
+    D["linz_confirm"] = dict(quantum=es("results_linz_confirm/cobyla_sepn_12_seedSEED_linz_m200_g5_N100.csv", range(30, 50)))
+    for k in ("krr_rbf", "krr_sort"):
+        vals = []
+        for s_ in range(30, 50):
+            pr = Problem(Config(nq=12, seed=s_, n_train=100), "sepn_12")
+            pred, _ = fit_predict(k, pr.X[:, :12], pr.f, pr.Xf[:, :12]); vals.append(float(np.sum(np.abs(pred - pr.ff))))
+        D["linz_confirm"][k] = vals
     # ansatz composition in confirm runs
     comp = Counter(); npar = []
     for d in (12, 16, 18):
@@ -136,14 +169,15 @@ def fig2():
 def fig3(D):
     fig, ax = plt.subplots(figsize=(3.4, 2.4))
     ds = [12, 16, 18]
-    series = [("avqkan", "Adaptive VQKAN", C["avqkan"], "o", -0.25),
-              ("krr", "kernel ridge (LOO-CV)", C["krr"], "D", -0.08),
-              ("oracle", "best unregularised classical", C["cls"], "s", 0.08),
-              ("const", "constant", C["const"], "_", 0.25)]
+    series = [("avqkan", "Adaptive VQKAN", C["avqkan"], "o", -0.30),
+              ("krr", "RBF kernel ridge", C["krr"], "D", -0.15),
+              ("krr_sort", "sorted-input kernel ridge", C["krr"], "v", 0.0),
+              ("oracle", "best unregularised classical", C["cls"], "s", 0.15),
+              ("const", "constant", C["const"], "_", 0.30)]
     for k, lab, col, mk, dx in series:
         for d in ds:
             dot(ax, d, D["scaling"][str(d)][k], col, lab if d == 12 else None, mk, dx=dx * 2)
-    dot(ax, 12, D["scaling"]["12"]["qnn_tuned"], C["qnn"], "QNN (tuned)", "^", dx=-0.9)
+    dot(ax, 12, D["scaling"]["12"]["qnn_tuned"], C["qnn"], "QNN (tuned)", "^", dx=-1.0)
     ax.set_xticks(ds); ax.set_xlabel("input dimension d = number of qubits"); ax.set_ylabel("test error (10 training points)")
     ax.set_ylim(0, 24); ax.legend(frameon=False, loc="upper left", ncol=2, fontsize=6.5, columnspacing=0.8)
     ax.text(18, 0.6, "20 seeds per point", ha="right", fontsize=6, color=C["const"])
@@ -175,7 +209,8 @@ def fig5(D):
     fig, axes = plt.subplots(1, 2, figsize=(7.0, 2.3), gridspec_kw=dict(width_ratios=[1.3, 1]))
     ax = axes[0]
     Ns = sorted(int(n) for n in D["nsweep"])
-    for k, lab, col, mk in [("avqkan", "Adaptive VQKAN", C["avqkan"], "o"), ("krr", "kernel ridge (LOO-CV)", C["krr"], "D"),
+    for k, lab, col, mk in [("avqkan", "Adaptive VQKAN", C["avqkan"], "o"), ("krr", "RBF kernel ridge", C["krr"], "D"),
+                            ("krr_sort", "sorted-input kernel ridge", C["krr"], "v"),
                             ("oracle", "best unregularised classical", C["cls"], "s"), ("const", "constant", C["const"], "_")]:
         ms_ = [msd(D["nsweep"][str(N)][k]) for N in Ns]
         ax.errorbar(Ns, [m for m, _ in ms_], yerr=[s for _, s in ms_], fmt=mk + "-", color=col, ms=4, lw=1.2,
@@ -191,6 +226,31 @@ def fig5(D):
     ax.set_xlabel("operators adopted (d = 12–18, 60 runs)")
     ax.set_title(f"parameters at end: {np.mean(D['ansatz']['n_params']):.0f} (spline coefficients)", fontsize=7)
     fig.tight_layout(); fig.savefig(f"{OUT}/fig5_nsweep.pdf"); fig.savefig(f"{OUT}/fig5_nsweep.png"); plt.close(fig)
+
+
+def fig6(D):
+    fig, axes = plt.subplots(1, 3, figsize=(7.0, 2.3), gridspec_kw=dict(width_ratios=[1, 1, 0.8]))
+    for ax, t, title in zip(axes[:2], ("sepn_12", "eq6"), ("standardised family, d = 12", "Eq. (1), d = 4")):
+        L = D["linz"][t]; Ns = [10, 40, 100]
+        for v, lab, col, mk, ls in [("base", "fixed readout", C["avqkan"], "o", ":"), ("base_m200", "fixed readout, budget ×7", C["avqkan"], "o", "--"),
+                                    ("linz_m200", "linear-Z readout, budget ×7", C["avqkan"], "o", "-"),
+                                    ("krr_rbf", "RBF kernel ridge", C["krr"], "D", "-"), ("krr_sort", "sorted-input kernel ridge", C["krr"], "v", "--")]:
+            xs = [N for N in Ns if f"{v}_N{N}" in L]
+            if not xs:
+                continue
+            ms_ = [msd(L[f"{v}_N{N}"]) for N in xs]
+            ax.errorbar(xs, [m for m, _ in ms_], yerr=[sd for _, sd in ms_], fmt=mk + ls, color=col, ms=4, lw=1.1, capsize=2,
+                        elinewidth=0.8, markeredgecolor="white", markeredgewidth=0.5, label=lab if t == "sepn_12" else None)
+        ax.set_xscale("log"); ax.set_xticks(Ns); ax.set_xticklabels([str(n) for n in Ns]); ax.set_ylim(0, 14)
+        ax.set_xlabel("training points N"); ax.set_title(title, fontsize=8)
+    axes[0].set_ylabel("test error")
+    h, l = axes[0].get_legend_handles_labels(); axes[1].legend(h, l, frameon=False, fontsize=6, loc="upper right")
+    ax = axes[2]; Cc = D["linz_confirm"]
+    for i, (k, lab, col, mk) in enumerate([("quantum", "linear-Z\nVQKAN", C["avqkan"], "o"), ("krr_rbf", "RBF\nkernel", C["krr"], "D"), ("krr_sort", "sorted\nkernel", C["krr"], "v")]):
+        dot(ax, i, Cc[k], col, marker=mk)
+    ax.set_xticks(range(3)); ax.set_xticklabels(["linear-Z\nVQKAN", "RBF\nkernel", "sorted\nkernel"]); ax.set_ylim(0, 7)
+    ax.set_title("pre-registered, N = 100, 20 seeds", fontsize=8); ax.set_ylabel("test error")
+    fig.tight_layout(); fig.savefig(f"{OUT}/fig6_linz.pdf"); fig.savefig(f"{OUT}/fig6_linz.png"); plt.close(fig)
 
 
 def resource_table(D):
@@ -215,7 +275,7 @@ def resource_table(D):
 
 if __name__ == "__main__":
     D = build_data()
-    fig2(); fig3(D); fig4(D); fig5(D); resource_table(D)
+    fig2(); fig3(D); fig4(D); fig5(D); fig6(D); resource_table(D)
     for d in ("12", "16", "18"):
         e = D["scaling"][d]
         print(d, {k: f"{msd(e[k])[0]:.2f}±{msd(e[k])[1]:.2f}" for k in ("avqkan", "krr", "oracle", "const")})
